@@ -42,6 +42,6 @@ const start = async () => {
             done(null, {});
         } 
     });
-    await fastify.listen(5000);
+    await fastify.listen(5000, '0.0.0.0');
 }
 start();
