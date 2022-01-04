@@ -1,8 +1,5 @@
 FROM ubuntu:18.04
 
-ENV TZ=Russia/Moscow
-RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
-
 RUN apt-get -y update
 
 ENV PGVER 10
