@@ -1,0 +1,27 @@
+{
+  "name": "techopark-db-project",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Итоговый семестровый проект курса технопарк по базам данных",
+  "main": "index.js",
+  "scripts": {
+    "start": "node ./src/server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Shureks-den/techopark-db-project.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Shureks-den/techopark-db-project/issues"
+  },
+  "homepage": "https://github.com/Shureks-den/techopark-db-project#readme",
+  "dependencies": {
+    "fastify": "^3.25.3",
+    "pg-promise": "^10.11.1",
+    "sequelize-cli": "^6.3.0"
+  }
+}

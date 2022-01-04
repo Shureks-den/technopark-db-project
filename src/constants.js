@@ -1,0 +1,13 @@
+export const CODES = {
+    OK: 200,
+    CREATED: 201,
+    NOT_FOUND: 404,
+    ALREADY_EXIST: 409,
+    INTERNAL_ERROR: 500,
+}
+
+export const DATABASE_CODES = {
+    NOT_NULL: '23502',
+    DONT_EXIST: '23503',
+    ALREADY_EXIST: '23505'
+}
