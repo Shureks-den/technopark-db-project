@@ -10,15 +10,17 @@ export default new class PostsDelivery {
         response.then((data)=>{
             if (posts.length == 0) {
                 reply.code(CODES.CREATED).send([]);
-                return;
             }
             if (data.length == 0) {
                 reply.code(CODES.NOT_FOUND).send([]);
-                return;
             }
             const users = [];
-            PostsRepository.createPost(data, users, posts).then(async (res)=>{
-                await ForumsRepository.updateForum(users, posts, data.forum);
+            PostsRepository.createPost(data, users, posts).then(async (res) => {
+                try {
+                    await ForumsRepository.updateForum(users, posts, data.forum);
+                } catch (error) {
+                    reply.code(CODES.CREATED).send(res);
+                }
                 reply.code(CODES.CREATED).send(res);
             }).catch((err)=>{
                 if (err.code === DATABASE_CODES.NOT_NULL) {

@@ -61,13 +61,10 @@ CREATE TABLE posts (
     created  TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
-CREATE INDEX idx_post_threadID_created_id ON posts(thread_id, created, id);
-CREATE INDEX idx_post_threadID_path ON posts(thread_id, path);
-CREATE INDEX idx_posts_threadID_root_path ON posts (thread_id, (path[1]), path);
-CREATE INDEX idx_post_threadID_id_parentNull_id ON posts(thread_id, id) WHERE parent_id IS NULL;
-CREATE INDEX idx_posts_id ON posts (id);
-CREATE INDEX idx_posts_id_full ON posts (id, parent_id, thread_id , message, edited, created, forum_slug, author) ;
-CREATE INDEX idx_post_threadID_ID_parentID ON posts(thread_id, id, parent_id);
+CREATE INDEX ON posts(thread_id, created, id);
+CREATE INDEX ON posts(thread_id, path);
+CREATE INDEX ON posts(thread_id, id) WHERE parent_id IS NULL;
+CREATE INDEX ON posts (id);
 
 CREATE TABLE forum_users (
     userId              INT REFERENCES users(id),
