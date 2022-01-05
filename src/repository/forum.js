@@ -45,8 +45,8 @@ export default new class ForumsRepository {
             }
         }
         return db.any({
-            text: `SELECT u.about, u.email, u.fullname, u.nickname FROM "users" as u JOIN forum_users as f ON u.id = f.userId WHERE f.forumSlug = $1 
-            ${sinceArg} GROUP BY u.about, u.email, u.fullname, u.nickname, f.username ORDER BY f.username ${sortArg} ${limit ? limitArg : ''};`,
+            text: `SELECT u.* FROM "users" as u JOIN forum_users as f ON u.id = f.userId WHERE f.forumSlug = $1 
+            ${sinceArg} ORDER BY f.username ${sortArg} ${limit ? limitArg : ''};`,
             values: [slug],
         });
     }
@@ -85,6 +85,7 @@ export default new class ForumsRepository {
             args.push(forum, element);
         });
         text = text.slice(0, -1);
+        text += ' ON CONFLICT DO NOTHING';
 
         await db.none({
             text: text,
@@ -92,7 +93,7 @@ export default new class ForumsRepository {
         });
     }
 
-    initForumUsers(thread) {
+    async initForumUsers(thread) {
         const text = `
         INSERT INTO forum_users(userId,forumSlug, username) VALUES
          ((SELECT id FROM users WHERE users.nickname = $2), $1, $2) ON CONFLICT DO NOTHING`;

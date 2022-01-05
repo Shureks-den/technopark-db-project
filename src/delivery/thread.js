@@ -12,7 +12,7 @@ export default new class ThreadsDelivery {
 
         response.then(async (data)=>{
             await ForumsRepository.initForumUsers(thread);
-            reply.code(CODES.CREATED).send(data);
+            reply.code(201).send(data);
         }).catch((err) => {
             if (err.code === DATABASE_CODES.ALREADY_EXIST) {
                 ThreadsRepository.getThreadsBySlug(thread.slug).then((data) => {
