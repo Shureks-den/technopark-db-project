@@ -7,12 +7,16 @@ DROP TABLE IF EXISTS forum_users CASCADE;
 DROP TABLE IF EXISTS votes CASCADE;
 
 CREATE TABLE users (
-    id          SERIAL  UNIQUE,
+    id          SERIAL  UNIQUE NOT NULL,
     nickname    CITEXT  NOT NULL PRIMARY KEY,
     email       CITEXT  NOT NULL UNIQUE,
     fullname    TEXT    NOT NULL,
     about       TEXT    NOT NULL
 );
+
+CREATE INDEX ON users(id);
+CREATE UNIQUE INDEX idx_users_nickname ON users(nickname);
+CLUSTER users USING idx_users_nickname;
 
 CREATE TABLE forums (
     id      SERIAL,
@@ -22,6 +26,11 @@ CREATE TABLE forums (
     posts   INT             NOT NULL DEFAULT 0,
     threads INT             NOT NULL DEFAULT 0 
 );
+
+CREATE UNIQUE INDEX ON idx_forums_id forums(id);
+CREATE UNIQUE INDEX ON forums(slug, id);
+CREATE UNIQUE INDEX ON forums(id, slug);
+CLUSTER forums USING idx_forums_id;
 
 CREATE TABLE threads (
     id      SERIAL          PRIMARY KEY,
@@ -33,6 +42,10 @@ CREATE TABLE threads (
     votes   INT DEFAULT 0   NOT NULL,
     created TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
+
+CREATE INDEX ON threads(slug);
+CREATE INDEX ON threads(forum, author);
+CREATE INDEX ON threads(created, forum);
 
 CREATE TABLE posts (
     id          SERIAL      PRIMARY KEY,
@@ -46,12 +59,21 @@ CREATE TABLE posts (
     created  TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
+-- CREATE INDEX idx_post_threadID_created_id ON posts(thread_id, created, id);
+-- CREATE INDEX idx_post_threadID_path ON posts(thread_id, path);
+-- CREATE INDEX idx_posts_threadID_root_path ON posts (thread_id, (path[1]), path);
+-- CREATE INDEX idx_post_threadID_id_parentNull_id ON posts(thread_id, id) WHERE parent_id IS NULL;
+-- CREATE INDEX idx_posts_id ON posts (id);
+-- CREATE INDEX idx_posts_id_full ON posts (id, parent_id, thread_id , message, edited, created, forum_slug, author) ;
+-- CREATE INDEX idx_post_threadID_ID_parentID ON posts(thread_id, id, parent_id);
 
 CREATE TABLE forum_users (
     userId              INT REFERENCES users(id),
     forumSlug CITEXT    NOT NULL,
     username CITEXT     NOT NULL
 );
+CREATE INDEX idx_forum_users_username_forumSlug ON forum_users(forumSlug, username);
+CLUSTER forum_users USING idx_forum_users_username_forumSlug;
 
 CREATE TABLE IF NOT EXISTS votes (
   user_id   CITEXT REFERENCES users(nickname)   NOT NULL,
@@ -59,7 +81,9 @@ CREATE TABLE IF NOT EXISTS votes (
   voice     INT                                 NOT NULL
 );
 
+
 ALTER TABLE ONLY votes ADD CONSTRAINT votes_user_thread_unique UNIQUE (user_id, thread_id);
+CLUSTER votes USING votes_user_thread_unique;
 
 -- счетчик воутов
 CREATE OR REPLACE FUNCTION vote_insert()

@@ -3,7 +3,7 @@ FROM ubuntu:18.04
 RUN apt-get -y update
 
 ENV PGVER 10
-RUN apt-get install -y postgresql-$PGVER
+RUN apt-get install -y postgresql-${PGVER}
 
 USER postgres
 
