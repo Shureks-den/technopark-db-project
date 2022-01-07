@@ -42,38 +42,15 @@ export default new class ThreadsDelivery {
         });
     }
 
-    static getPostsID(request, reply, id) {
-        const response = PostsRepository.getPostsByID(request.query.limit,
-            request.query.since, request.query.desc, request.query.sort, id);
-        response.then((data)=>{
-            if (data.length == 0) {
-                ThreadsRepository.getThreadsID(id).then((res)=> {
-                    if (res.length === 0) {
-                        reply.code(CODES.NOT_FOUND).send(err);
-                        return;
-                    }
-                    reply.code(CODES.OK).send([]);
-                    return;
-                }).catch((err)=>{
-                    reply.code(CODES.NOT_FOUND).send(err);
-                });
-            } else {
-                reply.code(CODES.OK).send(data);
-            }
-        }).catch((err)=>{
-            reply.code(CODES.NOT_FOUND).send(err);
-        });
-    }
-
     async getPosts(request, reply) {
         const slug = request.params.slug;
         if (!isNaN(slug)) {
-            ThreadsDelivery.getPostsID(request, reply, slug);
+            getPostsID(request, reply, slug);
             return;
         } else {
             const response = ThreadsRepository.getThreadsIdBySlug(slug);
             response.then((data)=>{
-                ThreadsDelivery.getPostsID(request, reply, data.id);
+                getPostsID(request, reply, data.id);
             }).catch((err)=> {
                 reply.code(CODES.NOT_FOUND).send(err);
             });
@@ -108,3 +85,26 @@ export default new class ThreadsDelivery {
         });
     }
 };
+
+function getPostsID(request, reply, id) {
+    const response = PostsRepository.getPostsByID(request.query.limit,
+        request.query.since, request.query.desc, request.query.sort, id);
+    response.then((data)=>{
+        if (data.length == 0) {
+            ThreadsRepository.getThreadsID(id).then((res)=> {
+                if (res.length === 0) {
+                    reply.code(CODES.NOT_FOUND).send(err);
+                    return;
+                }
+                reply.code(CODES.OK).send([]);
+                return;
+            }).catch((err)=>{
+                reply.code(CODES.NOT_FOUND).send(err);
+            });
+        } else {
+            reply.code(CODES.OK).send(data);
+        }
+    }).catch((err)=>{
+        reply.code(CODES.NOT_FOUND).send(err);
+    });
+}

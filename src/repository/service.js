@@ -10,16 +10,16 @@ export default new class ServiceRepository {
 
     status(callback) {
         const text = `SELECT (
-            SELECT COUNT(*) FROM forums) AS forum_count,
-            (SELECT COUNT(*) FROM users) AS user_count,
-            (SELECT COUNT(*) FROM threads) AS thread_count,
-            (SELECT COUNT(*) FROM posts) AS post_count`;
+            SELECT COUNT(*) FROM forums) AS f_count,
+            (SELECT COUNT(*) FROM users) AS u_count,
+            (SELECT COUNT(*) FROM threads) AS t_count,
+            (SELECT COUNT(*) FROM posts) AS p_count`;
         db.one(text).then((data) => {
             callback({
-                forum: data.forum_count * 1,
-                user: data.user_count * 1,
-                thread: data.thread_count * 1,
-                post: data.post_count * 1,
+                forum: data.f_count * 1,
+                user: data.u_count * 1,
+                thread: data.t_count * 1,
+                post: data.p_count * 1,
             });
         });
     }

@@ -82,7 +82,7 @@ export default new class ThreadsRepository {
         let text;
         const args = [];
         let countArgs = 1;
-        if (!title && !message) {
+        if (title == undefined && message == undefined) {
             text = `SELECT created, id, title,
             slug, message, author,
             forum FROM threads WHERE `;

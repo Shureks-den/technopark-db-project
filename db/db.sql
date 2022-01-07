@@ -14,10 +14,6 @@ CREATE TABLE users (
     about       TEXT    NOT NULL
 );
 
-CREATE INDEX ON users(id);
-CREATE UNIQUE INDEX idx_users_nickname ON users(nickname);
-CLUSTER users USING idx_users_nickname;
-
 CREATE TABLE forums (
     id      SERIAL,
     slug    CITEXT          PRIMARY KEY,
@@ -26,11 +22,6 @@ CREATE TABLE forums (
     posts   INT             NOT NULL DEFAULT 0,
     threads INT             NOT NULL DEFAULT 0 
 );
-
-CREATE UNIQUE INDEX ON idx_forums_id forums(id);
-CREATE UNIQUE INDEX ON forums(slug, id);
-CREATE UNIQUE INDEX ON forums(id, slug);
-CLUSTER forums USING idx_forums_id;
 
 CREATE TABLE threads (
     id      SERIAL          PRIMARY KEY,
@@ -48,7 +39,6 @@ CREATE INDEX ON threads(forum, author);
 CREATE INDEX idx_threads_forum_created ON threads(forum, created);
 CLUSTER threads USING idx_threads_forum_created;
 
-
 CREATE TABLE posts (
     id          SERIAL      PRIMARY KEY,
     parent_id   INT,
@@ -64,7 +54,7 @@ CREATE TABLE posts (
 CREATE INDEX ON posts(thread_id, created, id);
 CREATE INDEX ON posts(thread_id, path);
 CREATE INDEX ON posts(thread_id, id) WHERE parent_id IS NULL;
-CREATE INDEX ON posts (id);
+CREATE INDEX ON posts(id);
 
 CREATE TABLE forum_users (
     userId              INT REFERENCES users(id),
@@ -106,9 +96,7 @@ BEGIN
   END IF;
   UPDATE threads
   SET
-    votes = votes + CASE WHEN NEW.voice = -1
-      THEN -2
-        ELSE 2 END
+    votes = votes + NEW.voice * 2
   WHERE id = NEW.thread_id;
   RETURN NULL;
 END;
@@ -141,7 +129,6 @@ $path$ LANGUAGE  plpgsql;
 
 DROP TRIGGER IF EXISTS path_trigger ON posts;
 CREATE TRIGGER path_trigger BEFORE INSERT ON posts FOR EACH ROW EXECUTE PROCEDURE path();
-
 
 -- счетчик тредов в форуме
 CREATE OR REPLACE FUNCTION threads_forum_counter()

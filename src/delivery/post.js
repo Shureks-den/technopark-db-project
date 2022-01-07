@@ -26,7 +26,6 @@ export default new class PostsDelivery {
                 if (err.code === DATABASE_CODES.NOT_NULL) {
                     reply.code(CODES.ALREADY_EXIST).send(err);
                 }
-                console.log(err);
                 reply.code(CODES.NOT_FOUND).send(err);
             });
         }).catch((err)=>{

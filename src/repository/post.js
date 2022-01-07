@@ -3,13 +3,10 @@ import { db } from "../db.js";
 export default new class PostsRepository {
     createPost(thread, users, posts) {
         let text = 'INSERT INTO posts (edited, author, message, thread_id, parent_id, forum_slug) VALUES ';
-
         const args = [];
         let i = 1;
-
         posts.forEach(elem => {
             users.push(elem.author);
-
             if (elem.parent) {
                 text += `(FALSE, $${i}, $${i + 1}, (SELECT (CASE WHEN EXISTS 
                     ( SELECT id FROM posts p WHERE p.id=$${i + 3} AND p.thread_id=$${i + 2}) 
@@ -102,42 +99,38 @@ export default new class PostsRepository {
 
     getPostsByID(limit, since, desc, sorting, id) {
         const sort = sorting ? sorting : 'flat';
-        let query;
-        let args = [];
+        let text;
+        let args = [id];
+        let i = 2;
+        const descQuery = desc === 'true' ? 'DESC' : '';
+        let sinceQuery;
+        let limitSql;
+
         if (sort === 'flat') {
-            query = `
+            text = `
             SELECT id, thread_id AS thread, created,
             message, parent_id AS parent, author, forum_slug AS forum FROM
             (SELECT * FROM posts WHERE thread_id = $1 `;
-            args = [id];
-            let i = 2;
             if (since) {
                 if (desc === 'true') {
-                    query += ` AND id < $${i++}`;
+                    text += ` AND id < $${i++}`;
                 } else {
-                    query += ` AND id > $${i++}`;
+                    text += ` AND id > $${i++}`;
                 }
                 args.push(since);
             }
-            query += ' ) p ';
+            text += ' ) p ';
             if (desc === 'true') {
-                query += ' ORDER BY created DESC, id DESC ';
+                text += ' ORDER BY created DESC, id DESC ';
             } else {
-                query += ' ORDER BY created, id  ';
+                text += ' ORDER BY created, id  ';
             }
 
             if (limit) {
-                query += ` LIMIT $${i++}`;
+                text += ` LIMIT $${i++}`;
                 args.push(limit);
             }
         } else if (sort === 'tree') {
-            const descQuery = desc === 'true' ? 'DESC' : '';
-            let sinceQuery;
-            let limitSql;
-            let i = 2;
-            args = [];
-            args.push(id);
-
             if (since) {
                 sinceQuery = `
                  AND (path ${desc === 'true' ? '<' : '>'}
@@ -154,36 +147,30 @@ export default new class PostsRepository {
                 limitSql = '';
             }
 
-            query = `
+            text = `
             SELECT id, author, created, message, parent_id AS parent,
             forum_slug AS forum, thread_id AS thread
             FROM posts
             WHERE thread_id = $1 ${sinceQuery}
             ORDER BY path ${descQuery}
             ${limitSql}`;
-
         } else {
-            args = [id];
-            const descQuery = desc === 'true' ? 'DESC' : '';
-            let sinceQuery;
-            let limitSql;
-            let k = 2;
             if (since) {
                 sinceQuery = `
-                AND id ${desc === 'true' ? '<' : '>'} (SELECT path[1] FROM posts WHERE id = $${k++})`;
+                AND id ${desc === 'true' ? '<' : '>'} (SELECT path[1] FROM posts WHERE id = $${i++})`;
                 args.push(since);
             } else {
                 sinceQuery = '';
             }
 
             if (limit) {
-                limitSql = `LIMIT $${k++}`;
+                limitSql = `LIMIT $${i++}`;
                 args.push(limit);
             } else {
                 limitSql = '';
             }
 
-            query = `
+            text = `
             SELECT author, created, forum_slug AS forum, id, edited,
             message, parent_id AS parent, thread_id AS thread
             FROM posts
@@ -197,9 +184,6 @@ export default new class PostsRepository {
             ORDER BY path[1] ${descQuery}, path;`;
         }
 
-        return db.any(
-            query,
-            args,
-        );
+        return db.any({text: text, values: args});
     }
 }
