@@ -1,4 +1,4 @@
-import { db } from "../databaseConnection/db.js";
+import { db } from "../db.js";
 
 export default new class ForumsRepository {
     createForum(user, title, slug) {
@@ -95,7 +95,7 @@ export default new class ForumsRepository {
 
     async initForumUsers(thread) {
         const text = `
-        INSERT INTO forum_users(userId,forumSlug, username) VALUES
+        INSERT INTO forum_users(userId, forumSlug, username) VALUES
          ((SELECT id FROM users WHERE users.nickname = $2), $1, $2) ON CONFLICT DO NOTHING`;
 
         return db.none({text: text, values: [thread.forum, thread.author]});

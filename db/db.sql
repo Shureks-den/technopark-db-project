@@ -97,6 +97,7 @@ $vote_insert$  LANGUAGE plpgsql;
 DROP TRIGGER IF EXISTS vote_insert ON votes;
 CREATE TRIGGER vote_insert AFTER INSERT ON votes FOR EACH ROW EXECUTE PROCEDURE vote_insert();
 
+-- изменение воута
 CREATE OR REPLACE FUNCTION vote_update() RETURNS TRIGGER AS $vote_update$
 BEGIN
   IF OLD.voice = NEW.voice
@@ -116,7 +117,7 @@ $vote_update$ LANGUAGE  plpgsql;
 DROP TRIGGER IF EXISTS vote_update ON votes;
 CREATE TRIGGER vote_update AFTER UPDATE ON votes FOR EACH ROW EXECUTE PROCEDURE vote_update();
 
--- путь в посте
+-- путь поста и проверка на родителя
 CREATE OR REPLACE FUNCTION path() RETURNS TRIGGER AS $path$
     DECLARE
         parent_path INT[];
@@ -125,10 +126,10 @@ CREATE OR REPLACE FUNCTION path() RETURNS TRIGGER AS $path$
         IF (NEW.parent_id is null ) THEN
              NEW.path := NEW.path || NEW.id;
         ELSE
-                     SELECT path, thread_id FROM posts
+            SELECT path, thread_id FROM posts
             WHERE id = NEW.parent_id  INTO parent_path, parent_thread_id;
         IF parent_thread_id != NEW.thread_id THEN
-            raise exception 'error228' using errcode = '00409';
+            raise exception 'error parent path' using errcode = '00409';
         end if;
         NEW.path := NEW.path || parent_path || NEW.id;
         END IF;

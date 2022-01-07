@@ -21,7 +21,6 @@
   "homepage": "https://github.com/Shureks-den/techopark-db-project#readme",
   "dependencies": {
     "fastify": "^3.25.3",
-    "pg-promise": "^10.11.1",
-    "sequelize-cli": "^6.3.0"
+    "pg-promise": "^10.11.1"
   }
 }

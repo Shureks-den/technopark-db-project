@@ -1,4 +1,4 @@
-import { db } from "../databaseConnection/db.js";
+import { db } from "../db.js";
 
 export default new class PostsRepository {
     createPost(thread, users, posts) {
