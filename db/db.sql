@@ -37,7 +37,6 @@ CREATE TABLE threads (
 CREATE UNIQUE INDEX ON threads(slug);
 CREATE INDEX ON threads(forum, author);
 CREATE INDEX idx_threads_forum_created ON threads(forum, created);
-CLUSTER threads USING idx_threads_forum_created;
 
 CREATE TABLE posts (
     id          SERIAL      PRIMARY KEY,
@@ -62,7 +61,6 @@ CREATE TABLE forum_users (
     username CITEXT     NOT NULL
 );
 CREATE UNIQUE INDEX idx_forum_users_username_forumSlug ON forum_users(forumSlug, username);
-CLUSTER forum_users USING idx_forum_users_username_forumSlug;
 
 CREATE TABLE IF NOT EXISTS votes (
   user_id   CITEXT REFERENCES users(nickname)   NOT NULL,
@@ -71,7 +69,6 @@ CREATE TABLE IF NOT EXISTS votes (
 );
 
 ALTER TABLE ONLY votes ADD CONSTRAINT votes_user_thread_unique UNIQUE (user_id, thread_id);
-CLUSTER votes USING votes_user_thread_unique;
 
 -- счетчик воутов
 CREATE OR REPLACE FUNCTION vote_insert()
