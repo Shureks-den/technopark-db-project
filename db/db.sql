@@ -14,6 +14,10 @@ CREATE TABLE users (
     about       TEXT    NOT NULL
 );
 
+CREATE INDEX ON users(nickname);
+CREATE INDEX ON users(email);
+CREATE INDEX ON users(nickname, fullname, about, email);
+
 CREATE TABLE forums (
     id      SERIAL,
     slug    CITEXT          PRIMARY KEY,
@@ -22,6 +26,9 @@ CREATE TABLE forums (
     posts   INT             NOT NULL DEFAULT 0,
     threads INT             NOT NULL DEFAULT 0 
 );
+
+CREATE INDEX ON forums(id);
+CREATE INDEX ON forums(slug);
 
 CREATE TABLE threads (
     id      SERIAL          PRIMARY KEY,
@@ -36,14 +43,15 @@ CREATE TABLE threads (
 
 CREATE UNIQUE INDEX ON threads(slug);
 CREATE INDEX ON threads(forum, author);
-CREATE INDEX idx_threads_forum_created ON threads(forum, created);
+CREATE INDEX ON threads(id, slug);
+CREATE INDEX ON threads(forum, created);
 
 CREATE TABLE posts (
     id          SERIAL      PRIMARY KEY,
     parent_id   INT,
     path        INTEGER ARRAY,
     author      CITEXT      NOT NULL REFERENCES users(nickname),
-    forum  CITEXT      NOT NULL,
+    forum       CITEXT      NOT NULL,
     thread_id   INT         NOT NULL,
     message     TEXT        NOT NULL,
     edited      BOOLEAN     DEFAULT FALSE,
@@ -52,14 +60,17 @@ CREATE TABLE posts (
 
 CREATE INDEX ON posts(thread_id, created, id);
 CREATE INDEX ON posts(thread_id, path);
+CREATE INDEX ON posts(thread_id, (path[1]), path);
 CREATE INDEX ON posts(thread_id, id) WHERE parent_id IS NULL;
 CREATE INDEX ON posts(id);
+CREATE INDEX ON posts(thread_id);
+CREATE INDEX ON posts(id, parent_id, path, thread_id , message, edited, created, forum, author);
 
 CREATE TABLE forum_users (
   userId              INT REFERENCES users(id),
   forumSlug CITEXT    NOT NULL,
   username CITEXT     NOT NULL,
-  CONSTRAINT idx_forum_users_username_forumSlug UNIQUE(forumSlug, username)
+  CONSTRAINT forum_users_username_forumSlug UNIQUE(forumSlug, username)
 );
 
 CREATE TABLE IF NOT EXISTS votes (
