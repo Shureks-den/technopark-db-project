@@ -8,12 +8,11 @@ export default new class ServiceRepository {
     }
 
     async status(callback) {
-        const text = `SELECT (
+        const data = await db.one(`SELECT (
             SELECT COUNT(*) FROM forums) AS f_count,
             (SELECT COUNT(*) FROM users) AS u_count,
             (SELECT COUNT(*) FROM threads) AS t_count,
-            (SELECT COUNT(*) FROM posts) AS p_count`;
-        const data = await db.one(text);
+            (SELECT COUNT(*) FROM posts) AS p_count`);
         callback({
             forum: data.f_count * 1,
             user: data.u_count * 1,
