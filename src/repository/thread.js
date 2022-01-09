@@ -3,21 +3,19 @@ import { db } from "../db.js";
 
 export default new class ThreadsRepository {
     createThread(author, created, forum, message, title, slug) {
-        const text = ` INSERT INTO threads (author, created, forum, message, title, slug)
-            VALUES ((SELECT nickname FROM users WHERE nickname=$1), $2, (SELECT slug FROM forums WHERE slug=$3),
-            $4, $5, $6) RETURNING author, created, forum, message, title, votes, id ${slug ? ', slug' : ''}`;
-
+        let text = ` INSERT INTO threads (author, created, forum, message, title, slug)`;
+        text += `VALUES ((SELECT nickname FROM users WHERE nickname=$$${author}$$), $1, (SELECT slug FROM forums WHERE slug=$2),
+        $$${message}$$, $$${title}$$, $3) RETURNING author, created, forum, message, title, votes, id ${slug ? ', slug' : ''}`;
+            
         return db.one({
             text: text,
-            values: [
-                author, created, forum, message, title, slug],
+            values: [created, forum, slug],
         });
     }
 
     getThreadsBySlug(slug) {
         return db.one({
-            text: 'SELECT * FROM threads WHERE slug=$1',
-            values: [slug],
+            text: `SELECT * FROM threads WHERE slug=$$${slug}$$`,
         });
     }
 
