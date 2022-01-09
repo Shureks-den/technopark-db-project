@@ -77,19 +77,14 @@ export default new class ForumsRepository {
 
     updateForumUsers(users, forum) {
         let text = 'INSERT INTO forum_users(userId, forumSlug, username) VALUES';
-        let i = 1;
-        const args = [];
         users.forEach(element => {
-            text += `((SELECT id FROM users WHERE users.nickname = $${i + 1}), $${i}, $${i + 1}),`;
-            i += 2;
-            args.push(forum, element);
+            text += `((SELECT id FROM users WHERE users.nickname = $$${element}$$), $$${forum}$$, $$${element}$$),`;
         });
         text = text.slice(0, -1);
         text += ' ON CONFLICT DO NOTHING';
 
         return db.none({
             text: text,
-            values: args,
         });
     }
 }

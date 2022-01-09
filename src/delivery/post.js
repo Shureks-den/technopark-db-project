@@ -106,20 +106,20 @@ export default new class PostsDelivery {
 
     static #user(data) {
         return {
-            nickname: data.user_nickname,
-            about: data.user_about,
-            fullname: data.user_fullname,
-            email: data.user_email,
+            nickname: data.u_nickname,
+            about: data.u_about,
+            fullname: data.u_fullname,
+            email: data.u_email,
         };
     }
 
     static #forum(data) {
         return {
-            threads: data.forum_threads,
-            posts: data.forum_posts,
-            title: data.forum_title,
-            user: data.forum_user_nickname,
-            slug: data.forum,
+            threads: data.f_threads,
+            posts: data.f_posts,
+            title: data.f_title,
+            user: data.f_user,
+            slug: data.f_forum,
         };
     }
 

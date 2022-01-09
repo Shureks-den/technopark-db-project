@@ -39,8 +39,8 @@ export default new class PostsRepository {
         if (message == undefined) {
             text = 'SELECT id, author, message, created, forum, thread_id AS thread FROM posts WHERE id=$1';
         } else {
-            text = `UPDATE posts SET edited = message <> $1,
-            message = $1 WHERE id = $2 RETURNING id, message, author, created, forum, parent_id AS parent, thread_id AS thread, edited AS "isEdited"`;
+            text = `UPDATE posts SET edited = message <> $1, `;
+            text += `message = $1 WHERE id = $2 RETURNING id, message, author, created, forum, parent_id AS parent, thread_id AS thread, edited AS "isEdited"`;
             args.push(message);
         }
         args.push(id);
@@ -63,9 +63,10 @@ export default new class PostsRepository {
         let joinQuery = ' FROM posts ';
 
         if (user != null) {
-            selectQuery += 'U.nickname AS user_nickname, U.about AS user_about, U.fullname AS user_fullname, U.email AS user_email,';
             joinQuery += 'JOIN users U ON U.nickname = posts.author ';
+            selectQuery += 'U.nickname AS u_nickname, U.about AS u_about, U.fullname AS u_fullname, U.email AS u_email,';
         }
+        // тред
         if (thread != null) {
             selectQuery += `threads.author AS thread_author,
             threads.created AS thread_created,threads.votes AS thread_votes,
@@ -75,9 +76,10 @@ export default new class PostsRepository {
             threads.forum AS thread_forum,`;
             joinQuery += 'JOIN threads ON threads.id = posts.thread_id ';
         }
+        // форум
         if (forum != null) {
-            selectQuery += 'F.slug AS forum, F.threads AS forum_threads, F.title as forum_title,F.posts AS forum_posts, F."user" AS forum_user_nickname,';
             joinQuery += 'JOIN forums F ON F.slug = posts.forum ';
+            selectQuery += 'F.slug AS f_forum, F.threads AS f_threads, F.title as f_title, F.posts AS f_posts, F."user" AS f_user,';
         }
         joinQuery += ` WHERE posts.id = $$${id}$$`;
         const text = selectQuery.slice(0, -1) + joinQuery;
@@ -100,18 +102,17 @@ export default new class PostsRepository {
             flag = true;
         }
         if (since != undefined) {
+            args.push(since);
             if (!flag) {
                 text += ` AND id > $${i++}`;
             } else {
                 text += ` AND id < $${i++}`;
             }
-            args.push(since);
         }
-        text += ' ) p';
         if (!flag) {
-            text += ' ORDER BY created, id  ';
+            text += ' ) p ORDER BY created, id  ';
         } else {
-            text += ' ORDER BY created DESC, id DESC ';
+            text += ' ) p ORDER BY created DESC, id DESC ';
         }
 
         if (limit != undefined) {
@@ -126,22 +127,18 @@ export default new class PostsRepository {
         let args = [id];
         let i = 2;
         const descQuery = desc === 'true' ? 'DESC' : '';
-        let sinceQuery;
-        let limitSql;
-        if (since) {
+        let sinceQuery = '';
+        let limitSql = '';
+        if (since != undefined) {
+            args.push(since);
             sinceQuery = `
                 AND (path ${desc === 'true' ? '<' : '>'}
             (SELECT path FROM posts WHERE id = $${i++})) `;
-            args.push(since);
-        } else {
-            sinceQuery = '';
         }
 
-        if (limit) {
+        if (limit != undefined) {
             limitSql = ` LIMIT $${i++}`;
             args.push(limit);
-        } else {
-            limitSql = '';
         }
 
         text = `
