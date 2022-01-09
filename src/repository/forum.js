@@ -8,21 +8,7 @@ export default new class ForumsRepository {
         });
     }
 
-    getForumInfoBySlug(slug) {
-        return db.one({
-            text: 'SELECT slug, title, "user" FROM forums WHERE slug=$1',
-            values: [slug],
-        });
-    }
-
-    getForumsBySlug(slug) {
-        return db.one({
-            text: 'SELECT * FROM forums WHERE slug=$1',
-            values: [slug],
-        });
-    }
-
-    getForumUsers(slug, limit, since, desc) {
+        getForumUsers(slug, limit, since, desc) {
         let sortArg, limitArg, sinceArg;
 
         if (limit) {
@@ -48,6 +34,18 @@ export default new class ForumsRepository {
             text: `SELECT u.* FROM "users" as u JOIN forum_users as f ON u.id = f.userId WHERE f.forumSlug = $1 
             ${sinceArg} ORDER BY f.username ${sortArg} ${limit ? limitArg : ''};`,
             values: [slug],
+        });
+    }
+
+    getForumBySlug(slug) {
+        return db.one({
+            text: `SELECT slug, title, "user" FROM forums WHERE slug=$$${slug}$$`,
+        });
+    }
+
+    getForumsBySlug(slug) {
+        return db.one({
+            text: 'SELECT * FROM forums WHERE slug=$$${slug}$$',
         });
     }
 

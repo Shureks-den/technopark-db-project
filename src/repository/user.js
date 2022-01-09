@@ -3,22 +3,20 @@ import { db } from "../db.js";
 export default new class UsersRepository {
     createUser(nickname, fullname, email, about) {
         return db.one({
-            text: 'INSERT INTO users (nickname, fullname, email, about) VALUES ($1, $2, $3, $4) RETURNING *',
-            values: [nickname, fullname, email, about],
+            text: `INSERT INTO users (nickname, fullname, email, about) VALUES 
+            ($$${nickname}$$, $$${fullname}$$, $$${email}$$, $$${about}$$) RETURNING *`,
         });
     }
 
     getUsers(nickname, email) {
         return db.any({
-            text: 'SELECT * FROM users WHERE nickname=$1 OR email=$2;',
-            values: [nickname, email],
+            text: `SELECT * FROM users WHERE nickname=$$${nickname}$$ OR email=$$${email}$$`,
         });
     }
 
     getUserInfo(nickname) {
         return db.one({
-            text: 'SELECT about, email, nickname, fullname FROM users WHERE nickname=$1',
-            values: [nickname],
+            text: `SELECT about, email, nickname, fullname FROM users WHERE nickname=$$${nickname}$$`,
         });
     }
 

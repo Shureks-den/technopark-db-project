@@ -7,15 +7,15 @@ export default new class PostsRepository {
         let i = 1;
         posts.forEach(elem => {
             users.push(elem.author);
-            if (elem.parent) {
+            if (elem.parent == null) {
+                text += `(FALSE, $${i}, $${i + 1}, $${i + 2}, NULL, $${i + 3}),`;
+                args.push(elem.author, elem.message, thread.thread_id, thread.forum);
+            } else {
                 text += `(FALSE, $${i}, $${i + 1}, (SELECT (CASE WHEN EXISTS 
                     ( SELECT id FROM posts p WHERE p.id=$${i + 3} AND p.thread_id=$${i + 2}) 
                     THEN $${i + 2} ELSE NULL END)), $${i + 3}, $${i + 4}),`;
                 i++;
                 args.push(elem.author, elem.message, thread.thread_id, elem.parent, thread.forum);
-            } else {
-                text += `(FALSE, $${i}, $${i + 1}, $${i + 2}, NULL, $${i + 3}),`;
-                args.push(elem.author, elem.message, thread.thread_id, thread.forum);
             }
             i+= 4;
         });
@@ -97,93 +97,103 @@ export default new class PostsRepository {
         });
     }
 
-    getPostsByID(limit, since, desc, sorting, id) {
-        const sort = sorting ? sorting : 'flat';
+    getPostsByIDSortingFlat(limit, since, desc, id) {
+        let text;
+        let args = [id];
+        let i = 2;
+        text = `
+        SELECT id, thread_id AS thread, created,
+        message, parent_id AS parent, author, forum FROM
+        (SELECT * FROM posts WHERE thread_id = $1 `;
+        if (since) {
+            if (desc === 'true') {
+                text += ` AND id < $${i++}`;
+            } else {
+                text += ` AND id > $${i++}`;
+            }
+            args.push(since);
+        }
+        text += ' ) p ';
+        if (desc === 'true') {
+            text += ' ORDER BY created DESC, id DESC ';
+        } else {
+            text += ' ORDER BY created, id  ';
+        }
+
+        if (limit) {
+            text += ` LIMIT $${i++}`;
+            args.push(limit);
+        }
+        return db.any({text: text, values: args});
+    }
+
+    getPostsByIDSortingTree(limit, since, desc, id) {
         let text;
         let args = [id];
         let i = 2;
         const descQuery = desc === 'true' ? 'DESC' : '';
         let sinceQuery;
         let limitSql;
-
-        if (sort === 'flat') {
-            text = `
-            SELECT id, thread_id AS thread, created,
-            message, parent_id AS parent, author, forum FROM
-            (SELECT * FROM posts WHERE thread_id = $1 `;
-            if (since) {
-                if (desc === 'true') {
-                    text += ` AND id < $${i++}`;
-                } else {
-                    text += ` AND id > $${i++}`;
-                }
-                args.push(since);
-            }
-            text += ' ) p ';
-            if (desc === 'true') {
-                text += ' ORDER BY created DESC, id DESC ';
-            } else {
-                text += ' ORDER BY created, id  ';
-            }
-
-            if (limit) {
-                text += ` LIMIT $${i++}`;
-                args.push(limit);
-            }
-        } else if (sort === 'tree') {
-            if (since) {
-                sinceQuery = `
-                 AND (path ${desc === 'true' ? '<' : '>'}
-                (SELECT path FROM posts WHERE id = $${i++})) `;
-                args.push(since);
-            } else {
-                sinceQuery = '';
-            }
-
-            if (limit) {
-                limitSql = ` LIMIT $${i++}`;
-                args.push(limit);
-            } else {
-                limitSql = '';
-            }
-
-            text = `
-            SELECT id, author, created, message, parent_id AS parent,
-            forum, thread_id AS thread
-            FROM posts
-            WHERE thread_id = $1 ${sinceQuery}
-            ORDER BY path ${descQuery}
-            ${limitSql}`;
+        if (since) {
+            sinceQuery = `
+                AND (path ${desc === 'true' ? '<' : '>'}
+            (SELECT path FROM posts WHERE id = $${i++})) `;
+            args.push(since);
         } else {
-            if (since) {
-                sinceQuery = `
-                AND id ${desc === 'true' ? '<' : '>'} (SELECT path[1] FROM posts WHERE id = $${i++})`;
-                args.push(since);
-            } else {
-                sinceQuery = '';
-            }
-
-            if (limit) {
-                limitSql = `LIMIT $${i++}`;
-                args.push(limit);
-            } else {
-                limitSql = '';
-            }
-
-            text = `
-            SELECT author, created, forum, id, edited,
-            message, parent_id AS parent, thread_id AS thread
-            FROM posts
-            WHERE path[1] IN (
-            SELECT id FROM posts
-            WHERE thread_id=$1 AND parent_id IS NULL
-            ${sinceQuery}
-            ORDER BY id ${descQuery}
-            ${limitSql}
-            ) AND thread_id=$1
-            ORDER BY path[1] ${descQuery}, path;`;
+            sinceQuery = '';
         }
 
+        if (limit) {
+            limitSql = ` LIMIT $${i++}`;
+            args.push(limit);
+        } else {
+            limitSql = '';
+        }
+
+        text = `
+        SELECT id, author, created, message, parent_id AS parent,
+        forum, thread_id AS thread
+        FROM posts
+        WHERE thread_id = $1 ${sinceQuery}
+        ORDER BY path ${descQuery}
+        ${limitSql}`;
+        return db.any({text: text, values: args});
+    }
+
+    getPostsByIDSortringParent(limit, since, desc, id) {
+        let text;
+        let args = [id];
+        let i = 2;
+        const descQuery = desc === 'true' ? 'DESC' : '';
+        let sinceQuery;
+        let limitSql;
+        if (since) {
+            sinceQuery = `
+            AND id ${desc === 'true' ? '<' : '>'} (SELECT path[1] FROM posts WHERE id = $${i++})`;
+            args.push(since);
+        } else {
+            sinceQuery = '';
+        }
+
+        if (limit) {
+            limitSql = `LIMIT $${i++}`;
+            args.push(limit);
+        } else {
+            limitSql = '';
+        }
+
+        text = `
+        SELECT author, created, forum, id, edited,
+        message, parent_id AS parent, thread_id AS thread
+        FROM posts
+        WHERE path[1] IN (
+        SELECT id FROM posts
+        WHERE thread_id=$1 AND parent_id IS NULL
+        ${sinceQuery}
+        ORDER BY id ${descQuery}
+        ${limitSql}
+        ) AND thread_id=$1
+        ORDER BY path[1] ${descQuery}, path;`;
         return db.any({text: text, values: args});
     }
 }

@@ -90,8 +90,27 @@ export default new class ThreadsDelivery {
 };
 
 function getPostsID(request, reply, id) {
-    const response = PostsRepository.getPostsByID(request.query.limit,
-        request.query.since, request.query.desc, request.query.sort, id);
+    const sort = request.query.sort;
+    let response;
+    switch (sort) {
+        case 'flat':
+            response = PostsRepository.getPostsByIDSortingFlat(request.query.limit,
+                request.query.since, request.query.desc, id);
+            break;
+        case 'tree':
+            response = PostsRepository.getPostsByIDSortingTree(request.query.limit,
+                request.query.since, request.query.desc, id);
+            break;
+        case 'parent_tree':
+            response = PostsRepository.getPostsByIDSortringParent(request.query.limit,
+                request.query.since, request.query.desc, id);
+            break;
+        default:
+            response = PostsRepository.getPostsByIDSortingFlat(request.query.limit,
+                request.query.since, request.query.desc, id);
+            break;
+    }
+
     response.then((data)=>{
         if (data.length == 0) {
             ThreadsRepository.getThreadsID(id).then((res)=> {

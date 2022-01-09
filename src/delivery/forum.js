@@ -10,7 +10,7 @@ export default new class ForumsDelivery {
             reply.code(CODES.CREATED).send(data);
         }).catch(err => {
             if (err.code === DATABASE_CODES.ALREADY_EXIST) {
-                ForumsRepository.getForumInfoBySlug(slug).then((data) => {
+                ForumsRepository.getForumBySlug(slug).then((data) => {
                     reply.code(CODES.ALREADY_EXIST).send(data);
                 });
             } else {
