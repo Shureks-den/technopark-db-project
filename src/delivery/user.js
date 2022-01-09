@@ -1,17 +1,20 @@
 import  UsersRepository  from "../repository/user.js";
-import  UserModel from "../models/user.js";
 import { CODES, DATABASE_CODES } from "../constants.js";
 
 export default new class UsersDelivery {
 
     async createUser(request, reply) {
-        const user = new UserModel(request);
-        const response = UsersRepository.createUser(user);
+        const nickname = request.params.nickname;
+        const fullname = request.body.fullname;
+        const email = request.body.email;
+        const about = request.body.about;
+        const response = UsersRepository.createUser(nickname, fullname, email, about);
+        
         response.then((data) => {
             reply.code(CODES.CREATED).send(data);
         }).catch(err =>{
             if (err.code == DATABASE_CODES.ALREADY_EXIST) {
-                UsersRepository.getUsers(user.nickname, user.email).then(data => {
+                UsersRepository.getUsers(nickname, email).then(data => {
                     reply.code(CODES.ALREADY_EXIST).send(data);
                     return;
                 });
@@ -29,8 +32,11 @@ export default new class UsersDelivery {
     }
 
     async updateUserInfo(request, reply) {
-        const user = new UserModel(request);
-        const response = UsersRepository.updateUserInfo(user);
+        const nickname = request.params.nickname;
+        const fullname = request.body.fullname;
+        const email = request.body.email;
+        const about = request.body.about;
+        const response = UsersRepository.updateUserInfo(nickname, fullname, email, about);
         
         response.then((data)=> {
             reply.code(CODES.OK).send(data);

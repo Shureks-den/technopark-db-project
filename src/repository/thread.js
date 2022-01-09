@@ -2,16 +2,15 @@ import { db } from "../db.js";
 
 
 export default new class ThreadsRepository {
-    createThread(thread) {
+    createThread(author, created, forum, message, title, slug) {
         const text = ` INSERT INTO threads (author, created, forum, message, title, slug)
             VALUES ((SELECT nickname FROM users WHERE nickname=$1), $2, (SELECT slug FROM forums WHERE slug=$3),
-            $4, $5, $6) RETURNING author, created, forum, message, title, votes, id ${thread.slug ? ', slug' : ''}`;
+            $4, $5, $6) RETURNING author, created, forum, message, title, votes, id ${slug ? ', slug' : ''}`;
 
         return db.one({
             text: text,
             values: [
-                thread.author, thread.created, thread.forum, 
-                thread.message, thread.title, thread.slug],
+                author, created, forum, message, title, slug],
         });
     }
 

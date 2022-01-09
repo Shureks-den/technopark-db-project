@@ -1,10 +1,10 @@
 import { db } from "../db.js";
 
 export default new class UsersRepository {
-    createUser(user) {
+    createUser(nickname, fullname, email, about) {
         return db.one({
             text: 'INSERT INTO users (nickname, fullname, email, about) VALUES ($1, $2, $3, $4) RETURNING *',
-            values: [user.nickname, user.fullname, user.email, user.about],
+            values: [nickname, fullname, email, about],
         });
     }
 
@@ -22,26 +22,33 @@ export default new class UsersRepository {
         });
     }
 
-    updateUserInfo(user) {
+    updateUserInfo(nickname, fullname, email, about) {
         let text = 'UPDATE users SET ';
-        if (user.fullname != undefined) {
-            text += `fullname = $$${user.fullname}$$, `;
+        let i = 1;
+        const args = [];
+        if (fullname != undefined) {
+            text += `fullname = $${i++}, `;
+            args.push(fullname);
         } else {
             text += `fullname = fullname, `;
         }
-        if (user.email != undefined) {
-            text += `email = $$${user.email}$$, `;
+        if (email != undefined) {
+            text += `email = $${i++}, `;
+            args.push(email);
         } else {
             text += `email = email, `;
         }
-        if (user.about != undefined) {
-            text += `about = $$${user.about}$$ `;
+        if (about != undefined) {
+            text += `about = $${i++} `;
+            args.push(about);
         } else {
             text += `about = about `;
         }
-        text += `WHERE nickname = $$${user.nickname}$$ RETURNING *`;
+        args.push(nickname);
+        text += `WHERE nickname = $${i} RETURNING *`;
         return db.one({
             text:text,
+            values: args,
         });
     }
 };

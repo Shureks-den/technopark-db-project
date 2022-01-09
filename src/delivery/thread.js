@@ -1,5 +1,4 @@
 import ThreadsRepository from '../repository/thread.js';
-import ThreadModel from '../models/thread.js';
 import ForumsRepository from '../repository/forum.js';
 import PostsRepository from '../repository/post.js';
 import { CODES, DATABASE_CODES } from '../constants.js';
@@ -7,14 +6,19 @@ import { CODES, DATABASE_CODES } from '../constants.js';
 
 export default new class ThreadsDelivery {
     async createThread(request, reply) {
-        const thread = new ThreadModel(request);
-        const response = ThreadsRepository.createThread(thread);
+        const forum = request.body.forum ? request.body.forum : request.params.slug;
+        const author = request.body.author;
+        const created = request.body.created;
+        const title = request.body.title;
+        const message = request.body.message;
+        const slug = request.body.slug ? request.body.slug : undefined;
+        const response = ThreadsRepository.createThread(author, created, forum, message, title, slug);
 
         response.then(async (data)=>{
             reply.code(CODES.CREATED).send(data);
         }).catch((err) => {
             if (err.code === DATABASE_CODES.ALREADY_EXIST) {
-                ThreadsRepository.getThreadsBySlug(thread.slug).then((data) => {
+                ThreadsRepository.getThreadsBySlug(slug).then((data) => {
                     reply.code(CODES.ALREADY_EXIST).send(data);
                 });
                 return;
