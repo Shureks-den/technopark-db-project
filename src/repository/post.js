@@ -30,27 +30,20 @@ export default new class PostsRepository {
     getPostInfo(id) {
         return db.one({
             text: `SELECT id, parent_id AS parent, thread_id AS thread,
-             message, edited AS "isEdited", created, forum AS forum, author FROM posts WHERE id = $1`,
-            values: [id],
+             message, edited AS "isEdited", created, forum, author FROM posts WHERE id = $$${id}$$`,
         });
     }
 
     updatePost(message, id) {
-        let text;
         const args = [];
-        if (message) {
-            text = `UPDATE posts SET edited = message <> $1,
-                message = $1 WHERE id = $2 RETURNING id,
-                message,
-                author,
-                created,
-                forum,
-                parent_id AS parent,
-                thread_id AS thread,
-                edited AS "isEdited"`;
-            args.push(message);
-        } else {
+        let text;
+        
+        if (message == undefined) {
             text = 'SELECT id, author, message, created, forum, thread_id AS thread FROM posts WHERE id=$1';
+        } else {
+            text = `UPDATE posts SET edited = message <> $1,
+            message = $1 WHERE id = $2 RETURNING id, message, author, created, forum, parent_id AS parent, thread_id AS thread, edited AS "isEdited"`;
+            args.push(message);
         }
         args.push(id);
 
@@ -71,11 +64,11 @@ export default new class PostsRepository {
 
         let query2 = ' FROM posts ';
 
-        if (user) {
+        if (user != null) {
             query1 += 'U.nickname AS user_nickname, U.about AS user_about, U.fullname AS user_fullname, U.email AS user_email,';
             query2 += 'LEFT JOIN users U ON U.nickname = posts.author ';
         }
-        if (thread) {
+        if (thread != null) {
             query1 += `threads.author AS thread_author,
             threads.created AS thread_created,threads.votes AS thread_votes,
             threads.id AS thread_id,
@@ -84,7 +77,7 @@ export default new class PostsRepository {
             threads.forum AS thread_forum,`;
             query2 += 'LEFT JOIN threads ON threads.id = posts.thread_id ';
         }
-        if (forum) {
+        if (forum != null) {
             query1 += 'F.slug AS forum, F.threads AS forum_threads, F.title as forum_title,F.posts AS forum_posts, F."user" AS forum_user_nickname,';
             query2 += 'LEFT JOIN forums F ON F.slug = posts.forum ';
         }
@@ -101,6 +94,7 @@ export default new class PostsRepository {
         let text;
         let args = [id];
         let i = 2;
+        let flag = false;
         text = `
         SELECT id, thread_id AS thread, created,
         message, parent_id AS parent, author, forum FROM
@@ -161,39 +155,39 @@ export default new class PostsRepository {
     }
 
     getPostsByIDSortringParent(limit, since, desc, id) {
-        let text;
+        let text = `
+        SELECT author, created, forum, id, edited,
+        message, parent_id AS parent, thread_id AS thread
+        FROM posts
+        WHERE path[1] IN (
+        SELECT id FROM posts`;
         let args = [id];
         let i = 2;
         const descQuery = desc === 'true' ? 'DESC' : '';
         let sinceQuery;
         let limitSql;
-        if (since) {
+        if (since == undefined) {
+            sinceQuery = '';
+        } else {
             sinceQuery = `
             AND id ${desc === 'true' ? '<' : '>'} (SELECT path[1] FROM posts WHERE id = $${i++})`;
             args.push(since);
-        } else {
-            sinceQuery = '';
         }
 
-        if (limit) {
+        if (limit == undefined) {
+            limitSql = '';
+        } else {
             limitSql = `LIMIT $${i++}`;
             args.push(limit);
-        } else {
-            limitSql = '';
         }
 
-        text = `
-        SELECT author, created, forum, id, edited,
-        message, parent_id AS parent, thread_id AS thread
-        FROM posts
-        WHERE path[1] IN (
-        SELECT id FROM posts
-        WHERE thread_id=$1 AND parent_id IS NULL
+        text += ` WHERE thread_id=$1 AND parent_id IS NULL
         ${sinceQuery}
         ORDER BY id ${descQuery}
         ${limitSql}
         ) AND thread_id=$1
-        ORDER BY path[1] ${descQuery}, path;`;
+        ORDER BY path[1] ${descQuery}, path;`
+
         return db.any({text: text, values: args});
     }
 }
