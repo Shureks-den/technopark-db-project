@@ -45,14 +45,13 @@ export default new class ForumsRepository {
 
     getForumsBySlug(slug) {
         return db.one({
-            text: 'SELECT * FROM forums WHERE slug=$$${slug}$$',
+            text: `SELECT * FROM forums WHERE slug=$$${slug}$$`,
         });
     }
 
     getIdForumsBySlug(slug) {
         return db.one({
-            text: 'SELECT id FROM forums WHERE slug = $1',
-            values: [slug],
+            text: `SELECT id FROM forums WHERE slug = $$${slug}$$`,
         });
     }
 

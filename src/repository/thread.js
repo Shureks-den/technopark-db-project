@@ -23,8 +23,7 @@ export default new class ThreadsRepository {
 
     getThreadsIdBySlug(slug) {
         return db.one({
-            text: 'SELECT id FROM threads WHERE slug=$1',
-            values: [slug],
+            text: `SELECT id FROM threads WHERE slug=$$${slug}$$`,
         }); 
     }
 
@@ -49,10 +48,6 @@ export default new class ThreadsRepository {
 
     getThreads(desc, limit, since, slug) {
         let sortArg, limitArg, sinceArg;
-        
-        if (limit) {
-            limitArg = `LIMIT ${limit}`;
-        }
 
         if (since) {
             if (desc === 'true') {
@@ -69,6 +64,10 @@ export default new class ThreadsRepository {
             } else {
                 sortArg = 'ASC';
             }
+        }
+
+        if (limit) {
+            limitArg = `LIMIT ${limit}`;
         }
 
         return db.any({
@@ -90,29 +89,29 @@ export default new class ThreadsRepository {
             } else {
                 text += 'slug = $1';
             }
-            args.push(slug);
         } else {
             text = 'UPDATE threads SET ';
-            if (title) {
+            if (title != undefined) {
                 text += `title = $${countArgs++},`;
                 args.push(title);
             }
-            if (message) {
+            if (message != undefined) {
                 text += `message = $${countArgs++},`;
                 args.push(message);
             }
             text = text.slice(0, -1);
             if (!isNaN(slug)) {
-                text += ` WHERE id = $${countArgs++} RETURNING created, id, title,slug, message,author, forum`;
+                text += ` WHERE id = $${countArgs++} `;
             } else {
-                text += ` WHERE slug = $${countArgs++} RETURNING created, id, title, slug, message, author, forum`;
+                text += ` WHERE slug = $${countArgs++} `;
             }
-            args.push(slug);
+            text += ` RETURNING created, id, title, slug, message, author, forum`;
         }
+        args.push(slug);
 
         return db.one({
             text: text,
             values: args,
         });
     }
-};
+}
