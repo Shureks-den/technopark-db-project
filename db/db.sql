@@ -14,9 +14,7 @@ CREATE TABLE users (
     about       TEXT    NOT NULL
 );
 
-CREATE INDEX ON users(nickname);
-CREATE INDEX ON users(email);
-CREATE INDEX ON users(nickname, fullname, about, email);
+CREATE INDEX ON users(nickname, email);
 
 CREATE TABLE forums (
     id      SERIAL,
@@ -27,8 +25,7 @@ CREATE TABLE forums (
     threads INT             NOT NULL DEFAULT 0 
 );
 
-CREATE INDEX ON forums(id);
-CREATE INDEX ON forums(slug);
+CREATE INDEX ON forums USING hash (slug);
 
 CREATE TABLE threads (
     id      SERIAL          PRIMARY KEY,
@@ -72,6 +69,8 @@ CREATE TABLE forum_users (
   username CITEXT     NOT NULL,
   CONSTRAINT forum_users_username_forumSlug UNIQUE(forumSlug, username)
 );
+
+CREATE INDEX ON forum_users(username);
 
 CREATE TABLE IF NOT EXISTS votes (
   user_id   CITEXT REFERENCES users(nickname)   NOT NULL,
