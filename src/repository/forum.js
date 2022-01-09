@@ -71,11 +71,14 @@ export default new class ForumsRepository {
         });
     }
 
-    async updateForum(users, posts, forum) {
+    async updateForum(postsLength, forum) {
         await db.none({
             text: `UPDATE forums SET posts=forums.posts+$1 WHERE slug=$2`,
-            values: [posts.length, forum],
-        })
+            values: [postsLength, forum],
+        });
+    }
+
+    async updateForumUsers(users, forum) {
         let text = 'INSERT INTO forum_users(userId, forumSlug, username) VALUES';
         let i = 1;
         const args = [];
@@ -92,13 +95,4 @@ export default new class ForumsRepository {
             values: args,
         });
     }
-
-    async initForumUsers(thread) {
-        const text = `
-        INSERT INTO forum_users(userId, forumSlug, username) VALUES
-         ((SELECT id FROM users WHERE users.nickname = $2), $1, $2) ON CONFLICT DO NOTHING`;
-
-        return db.none({text: text, values: [thread.forum, thread.author]});
-    }
-
 }

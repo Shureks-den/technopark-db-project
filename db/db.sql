@@ -37,14 +37,13 @@ CREATE TABLE threads (
 CREATE UNIQUE INDEX ON threads(slug);
 CREATE INDEX ON threads(forum, author);
 CREATE INDEX idx_threads_forum_created ON threads(forum, created);
-CLUSTER threads USING idx_threads_forum_created;
 
 CREATE TABLE posts (
     id          SERIAL      PRIMARY KEY,
     parent_id   INT,
     path        INTEGER ARRAY,
     author      CITEXT      NOT NULL REFERENCES users(nickname),
-    forum_slug  CITEXT      NOT NULL,
+    forum  CITEXT      NOT NULL,
     thread_id   INT         NOT NULL,
     message     TEXT        NOT NULL,
     edited      BOOLEAN     DEFAULT FALSE,
@@ -57,21 +56,18 @@ CREATE INDEX ON posts(thread_id, id) WHERE parent_id IS NULL;
 CREATE INDEX ON posts(id);
 
 CREATE TABLE forum_users (
-    userId              INT REFERENCES users(id),
-    forumSlug CITEXT    NOT NULL,
-    username CITEXT     NOT NULL
+  userId              INT REFERENCES users(id),
+  forumSlug CITEXT    NOT NULL,
+  username CITEXT     NOT NULL,
+  CONSTRAINT idx_forum_users_username_forumSlug UNIQUE(forumSlug, username)
 );
-CREATE UNIQUE INDEX idx_forum_users_username_forumSlug ON forum_users(forumSlug, username);
-CLUSTER forum_users USING idx_forum_users_username_forumSlug;
 
 CREATE TABLE IF NOT EXISTS votes (
   user_id   CITEXT REFERENCES users(nickname)   NOT NULL,
   thread_id INT REFERENCES threads(id)          NOT NULL,
-  voice     INT                                 NOT NULL
+  voice     INT                                 NOT NULL,
+  CONSTRAINT votes_user_thread_unique UNIQUE (user_id, thread_id)
 );
-
-ALTER TABLE ONLY votes ADD CONSTRAINT votes_user_thread_unique UNIQUE (user_id, thread_id);
-CLUSTER votes USING votes_user_thread_unique;
 
 -- счетчик воутов
 CREATE OR REPLACE FUNCTION vote_insert()
@@ -143,3 +139,15 @@ $threads_forum_counter$  LANGUAGE plpgsql;
 
 DROP TRIGGER IF EXISTS threads_forum_counter ON threads;
 CREATE TRIGGER threads_forum_counter AFTER INSERT ON threads FOR EACH ROW EXECUTE PROCEDURE threads_forum_counter();
+
+CREATE OR REPLACE FUNCTION insert_forum_user()
+  RETURNS TRIGGER AS $insert_forum_user$
+    BEGIN
+      INSERT INTO forum_users(userId, forumSlug, username) VALUES
+        ((SELECT id FROM users WHERE users.nickname = NEW.author), New.forum, NEW.author) ON CONFLICT DO NOTHING;
+    return NULL;
+    END;
+    $insert_forum_user$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS insert_forum_user ON threads;
+CREATE TRIGGER insert_forum_user AFTER insert on threads for each ROW EXECUTE PROCEDURE insert_forum_user();

@@ -2,7 +2,7 @@ import { db } from "../db.js";
 
 export default new class PostsRepository {
     createPost(thread, users, posts) {
-        let text = 'INSERT INTO posts (edited, author, message, thread_id, parent_id, forum_slug) VALUES ';
+        let text = 'INSERT INTO posts (edited, author, message, thread_id, parent_id, forum) VALUES ';
         const args = [];
         let i = 1;
         posts.forEach(elem => {
@@ -20,7 +20,7 @@ export default new class PostsRepository {
             i+= 4;
         });
         text = text.slice(0, -1);
-        text += ' RETURNING author, id, created, thread_id AS thread, parent_id AS parent, forum_slug AS forum, message';
+        text += ' RETURNING author, id, created, thread_id AS thread, parent_id AS parent, forum, message';
         return db.any({
             text: text, 
             values: args
@@ -30,7 +30,7 @@ export default new class PostsRepository {
     getPostInfo(id) {
         return db.one({
             text: `SELECT id, parent_id AS parent, thread_id AS thread,
-             message, edited AS "isEdited", created, forum_slug AS forum, author FROM posts WHERE id = $1`,
+             message, edited AS "isEdited", created, forum AS forum, author FROM posts WHERE id = $1`,
             values: [id],
         });
     }
@@ -44,13 +44,13 @@ export default new class PostsRepository {
                 message,
                 author,
                 created,
-                forum_slug AS forum,
+                forum,
                 parent_id AS parent,
                 thread_id AS thread,
                 edited AS "isEdited"`;
             args.push(message);
         } else {
-            text = 'SELECT id, author, message, created,forum_slug AS forum, thread_id AS thread FROM posts WHERE id=$1';
+            text = 'SELECT id, author, message, created, forum, thread_id AS thread FROM posts WHERE id=$1';
         }
         args.push(id);
 
@@ -66,7 +66,7 @@ export default new class PostsRepository {
         posts.thread_id AS post_thread,
         posts.message AS post_message,
         posts.edited AS post_is_edited,
-        posts.created AS post_created,posts.forum_slug AS post_forum_slug,
+        posts.created AS post_created,posts.forum AS post_forum,
         posts.author AS post_author,`;
 
         let query2 = ' FROM posts ';
@@ -81,12 +81,12 @@ export default new class PostsRepository {
             threads.id AS thread_id,
             threads.title AS thread_title,
             threads.message AS thread_message,threads.slug AS thread_slug,
-            threads.forum AS thread_forum_slug,`;
+            threads.forum AS thread_forum,`;
             query2 += 'LEFT JOIN threads ON threads.id = posts.thread_id ';
         }
         if (forum) {
-            query1 += 'F.slug AS forum_slug, F.threads AS forum_threads, F.title as forum_title,F.posts AS forum_posts, F."user" AS forum_user_nickname,';
-            query2 += 'LEFT JOIN forums F ON F.slug = posts.forum_slug ';
+            query1 += 'F.slug AS forum, F.threads AS forum_threads, F.title as forum_title,F.posts AS forum_posts, F."user" AS forum_user_nickname,';
+            query2 += 'LEFT JOIN forums F ON F.slug = posts.forum ';
         }
         query2 += ' WHERE posts.id = $1';
         const text = query1.slice(0, -1) + query2;
@@ -109,7 +109,7 @@ export default new class PostsRepository {
         if (sort === 'flat') {
             text = `
             SELECT id, thread_id AS thread, created,
-            message, parent_id AS parent, author, forum_slug AS forum FROM
+            message, parent_id AS parent, author, forum FROM
             (SELECT * FROM posts WHERE thread_id = $1 `;
             if (since) {
                 if (desc === 'true') {
@@ -149,7 +149,7 @@ export default new class PostsRepository {
 
             text = `
             SELECT id, author, created, message, parent_id AS parent,
-            forum_slug AS forum, thread_id AS thread
+            forum, thread_id AS thread
             FROM posts
             WHERE thread_id = $1 ${sinceQuery}
             ORDER BY path ${descQuery}
@@ -171,7 +171,7 @@ export default new class PostsRepository {
             }
 
             text = `
-            SELECT author, created, forum_slug AS forum, id, edited,
+            SELECT author, created, forum, id, edited,
             message, parent_id AS parent, thread_id AS thread
             FROM posts
             WHERE path[1] IN (

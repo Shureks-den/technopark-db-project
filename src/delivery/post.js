@@ -16,8 +16,9 @@ export default new class PostsDelivery {
             }
             const users = [];
             PostsRepository.createPost(data, users, posts).then(async (res) => {
+                await ForumsRepository.updateForum(posts.length, data.forum);
                 try {
-                    await ForumsRepository.updateForum(users, posts, data.forum);
+                    await ForumsRepository.updateForumUsers(users, data.forum);
                 } catch (error) {
                     reply.code(CODES.CREATED).send(res);
                 }
@@ -96,7 +97,7 @@ export default new class PostsDelivery {
             id: data.pid,
             thread: data.post_thread,
             parent: data.post_parent,
-            forum: data.post_forum_slug,
+            forum: data.post_forum,
             message: data.post_message,
             isEdited: data.pisEdited,
             created: data.post_created,
@@ -118,13 +119,13 @@ export default new class PostsDelivery {
             posts: data.forum_posts,
             title: data.forum_title,
             user: data.forum_user_nickname,
-            slug: data.forum_slug,
+            slug: data.forum,
         };
     }
 
     static #thread(data) {
         return {
-            forum: data.thread_forum_slug,
+            forum: data.thread_forum,
             author: data.thread_author,
             created: data.thread_created,
             votes: data.thread_votes,

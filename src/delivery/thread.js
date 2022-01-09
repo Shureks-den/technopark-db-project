@@ -11,8 +11,7 @@ export default new class ThreadsDelivery {
         const response = ThreadsRepository.createThread(thread);
 
         response.then(async (data)=>{
-            await ForumsRepository.initForumUsers(thread);
-            reply.code(201).send(data);
+            reply.code(CODES.CREATED).send(data);
         }).catch((err) => {
             if (err.code === DATABASE_CODES.ALREADY_EXIST) {
                 ThreadsRepository.getThreadsBySlug(thread.slug).then((data) => {
